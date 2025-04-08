@@ -10,7 +10,6 @@ class LoginPage(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("QC Calibration")
-        self.showMaximized()  # 💡 Fullscreen
 
         # Outer layout to center the form
         self.outer_layout = QHBoxLayout()
@@ -25,7 +24,7 @@ class LoginPage(QMainWindow):
         # Title
         self.title = QLabel("Login Page")
         self.title.setAlignment(Qt.AlignCenter)
-        self.title.setStyleSheet("font-size: 24px; font-weight: bold;")
+        self.title.setStyleSheet("font-size: 25px; font-weight: bold;")
         self.layout.addWidget(self.title)
 
         # Username
@@ -62,7 +61,7 @@ class LoginPage(QMainWindow):
         container = QWidget()
         container.setLayout(self.outer_layout)
         self.setCentralWidget(container)
-
+        
     def login(self):
         username = self.username_input.text()
         password = self.password_input.text()
@@ -82,7 +81,8 @@ class LoginPage(QMainWindow):
         # self.close()
 
     def open_register(self):
-        from pages.register import RegisterPage  # Avoid circular import
+        from pages.register import RegisterPage
         self.register_page = RegisterPage()
         self.register_page.show()
         self.close()
+
