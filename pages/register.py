@@ -12,6 +12,8 @@ class RegisterPage(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("QC Calibration")
+        
+        self.setFixedSize(1000, 600)
 
         # Outer layout to center the form
         self.outer_layout = QHBoxLayout()

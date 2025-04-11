@@ -10,6 +10,8 @@ class LoginPage(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("QC Calibration")
+        
+        self.setFixedSize(1000, 600)
 
         # Outer layout to center the form
         self.outer_layout = QHBoxLayout()
@@ -75,10 +77,10 @@ class LoginPage(QMainWindow):
             QMessageBox.warning(self, "Login Failed", "Incorrect name or password.")
 
     def open_dashboard(self):
-        QMessageBox.information(self, "Dashboard", "Main Dashboard page would go here.")
-        # Example: self.dashboard = DashboardPage()
-        # self.dashboard.show()
-        # self.close()
+        from pages.dashboard import DashboardPage
+        self.dashboard = DashboardPage()
+        self.dashboard.show()
+        self.close()
 
     def open_register(self):
         from pages.register import RegisterPage
