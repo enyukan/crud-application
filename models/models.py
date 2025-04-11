@@ -1,5 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, TIMESTAMP
 from database.db import Base
+from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 
 class ToolType(Base):
     __tablename__ = "tool_types"
@@ -9,6 +11,7 @@ class ToolType(Base):
     block_2 = Column(Float)
     block_3 = Column(Float)
     tolerance = Column(Float)
+    tools = relationship("ToolRegistration", back_populates="tool_type")
 
 class LabTechnician(Base):
     __tablename__ = "lab_technicians"
@@ -23,8 +26,9 @@ class ToolRegistration(Base):
     tool_type_id = Column(Integer, ForeignKey("tool_types.tool_type_id"))
     tool_status = Column(String)
     last_calibration = Column(Date)
-    last_modified = Column(TIMESTAMP)
+    last_modified = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
     modified_by = Column(Integer, ForeignKey("lab_technicians.technician_id"))
+    tool_type = relationship("ToolType", back_populates="tools")
 
 class ValidationRecord(Base):
     __tablename__ = "validation_records"

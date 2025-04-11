@@ -54,6 +54,7 @@ class AddToolTypePage(QMainWindow):
         self.dashboard_button = QPushButton("Back to Dashboard")
         self.dashboard_button.clicked.connect(self.open_dashboard)
         self.button_layout.addWidget(self.dashboard_button)
+        layout.addLayout(self.button_layout)
 
         container = QWidget()
         container.setLayout(layout)

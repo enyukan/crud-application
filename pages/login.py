@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from models.models import LabTechnician
 from database.db import get_db
+from utils.app_context import app_context 
 
 class LoginPage(QMainWindow):
     def __init__(self):
@@ -72,9 +73,11 @@ class LoginPage(QMainWindow):
         user = db.query(LabTechnician).filter(LabTechnician.name == username).first()
 
         if user and user.password == password:
+            app_context.set_logged_in_user(user)  # Set the logged-in user in AppContext
             self.open_dashboard()
         else:
             QMessageBox.warning(self, "Login Failed", "Incorrect name or password.")
+
 
     def open_dashboard(self):
         from pages.dashboard import DashboardPage

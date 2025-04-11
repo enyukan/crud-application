@@ -9,7 +9,7 @@ from models.models import ToolType
 class UpdateToolTypePage(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Update Tool")
+        self.setWindowTitle("Update Tool Type")
         self.setFixedSize(1000, 600)
 
         # Main layout
@@ -18,7 +18,7 @@ class UpdateToolTypePage(QMainWindow):
         layout.setSpacing(15)
 
         # Top section: Dropdown to select tool type and select button
-        title = QLabel("Update Tool")
+        title = QLabel("Update Tool Type")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("font-size: 22px; font-weight: bold;")
         layout.addWidget(title)
@@ -30,7 +30,7 @@ class UpdateToolTypePage(QMainWindow):
         self.tool_type_dropdown.addItem("Select Tool Type")  # Placeholder option
         self.populate_tool_type_dropdown()
 
-        select_tool_button = QPushButton("Select Tool")
+        select_tool_button = QPushButton("Select Tool Type")
         select_tool_button.clicked.connect(self.load_tool_data)  # Connect button to load data
         
         tool_selection_layout.addWidget(self.tool_type_dropdown)
@@ -43,6 +43,7 @@ class UpdateToolTypePage(QMainWindow):
 
         # Left section: Labels
         self.left_layout = QVBoxLayout()
+        self.left_layout.addWidget(QLabel(""))
         self.left_layout.addWidget(QLabel("Block 1:"))
         self.left_layout.addWidget(QLabel("Block 2:"))
         self.left_layout.addWidget(QLabel("Block 3:"))
@@ -103,6 +104,7 @@ class UpdateToolTypePage(QMainWindow):
         self.dashboard_button = QPushButton("Back to Dashboard")
         self.dashboard_button.clicked.connect(self.open_dashboard)
         self.button_layout.addWidget(self.dashboard_button)
+        layout.addLayout(self.button_layout)
 
         # Set the main layout for the window
         container = QWidget()

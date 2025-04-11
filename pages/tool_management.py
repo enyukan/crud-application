@@ -33,11 +33,11 @@ class ToolManagementPage(QMainWindow):
         # Dropdown: Tool Registration
         self.tool_registration_menu = QMenu()
         self.tool_registration_menu.addAction("Register New Tool", self.open_register_tool)
-        #self.tool_registration_menu.addAction("Update Tool", self.open_update_tool)
+        self.tool_registration_menu.addAction("Update Tool", self.open_update_tool)
 
         self.tool_registration_button = QPushButton("Manage Tool")
-        #self.tool_registration_button.setMenu(self.tool_registration_menu)
-        #self.button_layout.addWidget(self.tool_registration_button)
+        self.tool_registration_button.setMenu(self.tool_registration_menu)
+        self.button_layout.addWidget(self.tool_registration_button)
 
         # Back to dashboard
         self.dashboard_button = QPushButton("Back to Dashboard")
