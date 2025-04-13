@@ -96,9 +96,14 @@ class UpdateToolTypePage(QMainWindow):
         self.submit_button = QPushButton("Submit Change")
         self.submit_button.clicked.connect(self.submit_change)
 
+        # Delete Button
+        self.delete_button = QPushButton("Delete Tool Type")
+        self.delete_button.clicked.connect(self.delete_tool_type)
+
         layout.addLayout(center_layout)
         layout.addWidget(self.submit_button)
-        
+        layout.addWidget(self.delete_button)  # Add delete button below submit
+
         # Back to dashboard
         self.button_layout = QHBoxLayout()
         self.dashboard_button = QPushButton("Back to Dashboard")
@@ -112,6 +117,12 @@ class UpdateToolTypePage(QMainWindow):
         self.setCentralWidget(container)
 
     def populate_tool_type_dropdown(self):
+        # Clear the existing items from the dropdown
+        self.tool_type_dropdown.clear()
+        
+        # Add the placeholder option again
+        self.tool_type_dropdown.addItem("Select Tool Type")  
+        
         # Populate the dropdown with tool type names from the database
         db = next(get_db())
         tool_types = db.query(ToolType).all()
@@ -171,6 +182,41 @@ class UpdateToolTypePage(QMainWindow):
 
         else:
             QMessageBox.warning(self, "Error", "Tool type not found.")
+
+    def delete_tool_type(self):
+        tool_name = self.tool_type_dropdown.currentText()
+        if tool_name == "Select Tool Type" or not tool_name:
+            QMessageBox.warning(self, "Error", "No tool type selected.")
+            return
+
+        # Confirm deletion action
+        reply = QMessageBox.question(self, "Confirm Deletion", f"Are you sure you want to delete the tool type '{tool_name}'?",
+                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            db = next(get_db())
+            tool = db.query(ToolType).filter(ToolType.tool_name == tool_name).first()
+
+            if tool:
+                db.delete(tool)
+                db.commit()
+                QMessageBox.information(self, "Success", f"Tool type '{tool_name}' deleted successfully!")
+                self.clear_tool_data()  # Clear the current tool data
+                self.populate_tool_type_dropdown()  # Refresh the dropdown
+            else:
+                QMessageBox.warning(self, "Error", "Tool type not found.")
+
+
+    def clear_tool_data(self):
+        # Clear all data fields after deletion
+        self.block1_data_label.setText("-")
+        self.block2_data_label.setText("-")
+        self.block3_data_label.setText("-")
+        self.tolerance_data_label.setText("-")
+        self.block1_input.clear()
+        self.block2_input.clear()
+        self.block3_input.clear()
+        self.tolerance_input.clear()
 
     def open_dashboard(self):
         from pages.dashboard import DashboardPage

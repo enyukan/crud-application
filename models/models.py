@@ -40,3 +40,4 @@ class ValidationRecord(Base):
     reading_2 = Column(Float)
     reading_3 = Column(Float)
     validation_status = Column(String)
+    technician = relationship("LabTechnician", backref="validations")

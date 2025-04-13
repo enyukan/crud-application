@@ -1,16 +1,16 @@
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout
+    QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QToolButton, QMenu
 )
 from PySide6.QtCore import Qt
 from pages.tool_management import ToolManagementPage
 from pages.validation import ValidationPage
-#from pages.view_records import ViewRecordsPage
+from pages.tool_validation_records import ToolValidationRecordsPage
+from pages.daily_calibration_records import DailyCalibrationRecordsPage
 
 class DashboardPage(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("QC Calibration")
-
         self.setFixedSize(1000, 600)
         
         # Main layout
@@ -36,10 +36,15 @@ class DashboardPage(QMainWindow):
         self.validation_records_button.clicked.connect(self.open_validation_records)
         self.button_layout.addWidget(self.validation_records_button)
 
-        # View Records Button
+        # View Records Button with Dropdown Menu
+        self.view_records_menu = QMenu()
+        self.view_records_menu.addAction("Tool Validation Records", self.open_tool_validation_records)
+        self.view_records_menu.addAction("Daily Calibration Records", self.open_daily_calibration_records)
+
         self.view_records_button = QPushButton("View Records")
-        self.view_records_button.clicked.connect(self.open_view_records)
+        self.view_records_button.setMenu(self.view_records_menu)
         self.button_layout.addWidget(self.view_records_button)
+
 
         self.layout.addLayout(self.button_layout)
 
@@ -68,13 +73,21 @@ class DashboardPage(QMainWindow):
             self.validation_records_page.show()
         self.close()
 
-    def open_view_records(self):
-        '''self.view_records_page = ViewRecordsPage()
+    def open_tool_validation_records(self):
+        self.tool_validation_records_page = ToolValidationRecordsPage()
         if self.isFullScreen():
-            self.view_records_page.showFullScreen()
+            self.tool_validation_records_page.showFullScreen()
         else:
-            self.view_records_page.show()
-        self.close()'''
+            self.tool_validation_records_page.show()
+        self.close()
+
+    def open_daily_calibration_records(self):
+        self.daily_calibration_records_page = DailyCalibrationRecordsPage()
+        if self.isFullScreen():
+            self.daily_calibration_records_page.showFullScreen()
+        else:
+            self.daily_calibration_records_page.show()
+        self.close()
 
     def logout(self):
         from pages.login import LoginPage

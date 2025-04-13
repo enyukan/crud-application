@@ -34,6 +34,7 @@ class ToolManagementPage(QMainWindow):
         self.tool_registration_menu = QMenu()
         self.tool_registration_menu.addAction("Register New Tool", self.open_register_tool)
         self.tool_registration_menu.addAction("Update Tool", self.open_update_tool)
+        self.tool_registration_menu.addAction("Mass Calibration", self.open_mass_calibration)
 
         self.tool_registration_button = QPushButton("Manage Tool")
         self.tool_registration_button.setMenu(self.tool_registration_menu)
@@ -79,5 +80,11 @@ class ToolManagementPage(QMainWindow):
     def open_dashboard(self):
         from pages.dashboard import DashboardPage
         self.page = DashboardPage()
+        self.page.show()
+        self.close()
+
+    def open_mass_calibration(self):
+        from pages.mass_calibration import MassCalibrationPage
+        self.page = MassCalibrationPage()
         self.page.show()
         self.close()
