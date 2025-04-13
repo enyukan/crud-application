@@ -3,8 +3,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from pages.tool_management import ToolManagementPage
-'''from pages.validation import ValidationRecordsPage
-from pages.view_records import ViewRecordsPage'''
+from pages.validation import ValidationPage
+#from pages.view_records import ViewRecordsPage
 
 class DashboardPage(QMainWindow):
     def __init__(self):
@@ -61,12 +61,12 @@ class DashboardPage(QMainWindow):
         self.close()
         
     def open_validation_records(self):
-        '''self.validation_records_page = ValidationRecordsPage()
+        self.validation_records_page = ValidationPage()
         if self.isFullScreen():
             self.validation_records_page.showFullScreen()
         else:
             self.validation_records_page.show()
-        self.close()'''
+        self.close()
 
     def open_view_records(self):
         '''self.view_records_page = ViewRecordsPage()
