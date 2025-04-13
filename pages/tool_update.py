@@ -1,6 +1,8 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QComboBox, QLineEdit, QPushButton, QMessageBox
+    QLabel, QComboBox, QLineEdit, QPushButton, QMessageBox,
+    QGridLayout, QGroupBox
+
 )
 from PySide6.QtCore import Qt, QDateTime
 from database.db import get_db
@@ -16,73 +18,71 @@ class UpdateToolPage(QMainWindow):
         layout = QVBoxLayout()
         layout.setContentsMargins(50, 50, 50, 50)
         layout.setSpacing(15)
+        
+        # Top section: Dropdown to select tool type and select button
+        title = QLabel("Update Tool Type")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("font-size: 22px; font-weight: bold;")
+        layout.addWidget(title)
 
         # Top section: Tool serial search
         top_layout = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Enter Tool Serial Number")
-        search_button = QPushButton("Search")
+        search_button = QPushButton("Search Tool")
         search_button.clicked.connect(self.load_tool_data)
         top_layout.addWidget(self.search_input)
         top_layout.addWidget(search_button)
         layout.addLayout(top_layout)
 
-        # Center layout
-        center_layout = QHBoxLayout()
+        # Center layout using a grid
+        form_layout = QGridLayout()
+        form_layout.setVerticalSpacing(15)
+        form_layout.setHorizontalSpacing(20)
 
-        # Labels on the left
-        label_layout = QVBoxLayout()
-        label_layout.addWidget(QLabel("Serial Number:"))
-        label_layout.addWidget(QLabel("Tool Type:"))
-        label_layout.addWidget(QLabel("Last Calibration Date:"))
-        label_layout.addWidget(QLabel("Tool Status:"))
-        
-        self.middle_layout = QVBoxLayout()
-        
-        # Label for "Current Data"
+        bold_style = "font-weight: bold;"
+
+        # Row 0 - Section headers
+        form_layout.addWidget(QLabel(""), 0, 0)  # Empty top-left cell
         current_data_label = QLabel("Current Data")
-        current_data_label.setAlignment(Qt.AlignCenter)
-        current_data_label.setStyleSheet("font-weight: bold;")
-        self.middle_layout.addWidget(current_data_label)
-        
-        # Middle layout for current data
-        self.serial_label = QLabel("-")
-        self.type_label = QLabel("-")
-        self.date_label = QLabel("-")
-        self.status_label = QLabel("-")
+        current_data_label.setStyleSheet(bold_style)
+        form_layout.addWidget(current_data_label, 0, 1)
 
-        self.middle_layout.addWidget(self.serial_label)
-        self.middle_layout.addWidget(self.type_label)
-        self.middle_layout.addWidget(self.date_label)
-        self.middle_layout.addWidget(self.status_label)
-
-        # Right layout for modification
-        self.right_layout = QVBoxLayout()
-        
-         # Label for "Your Modification"
         modification_label = QLabel("Your Modification")
-        modification_label.setAlignment(Qt.AlignCenter)
-        modification_label.setStyleSheet("font-weight: bold;")
-        self.right_layout.addWidget(modification_label)
-        
+        modification_label.setStyleSheet(bold_style)
+        form_layout.addWidget(modification_label, 0, 2)
+
+        # Row 1 - Serial Number
+        form_layout.addWidget(QLabel("Serial Number:"), 1, 0)
+        self.serial_label = QLabel("-")
         self.serial_input = QLineEdit()
+        form_layout.addWidget(self.serial_label, 1, 1)
+        form_layout.addWidget(self.serial_input, 1, 2)
+
+        # Row 2 - Tool Type
+        form_layout.addWidget(QLabel("Tool Type:"), 2, 0)
+        self.type_label = QLabel("-")
         self.type_dropdown = QComboBox()
+        self.populate_tool_type_dropdown()
+        form_layout.addWidget(self.type_label, 2, 1)
+        form_layout.addWidget(self.type_dropdown, 2, 2)
+
+        # Row 3 - Last Calibration Date
+        form_layout.addWidget(QLabel("Last Calibration Date:"), 3, 0)
+        self.date_label = QLabel("-")
         self.date_input = QLineEdit()
+        form_layout.addWidget(self.date_label, 3, 1)
+        form_layout.addWidget(self.date_input, 3, 2)
+
+        # Row 4 - Tool Status
+        form_layout.addWidget(QLabel("Tool Status:"), 4, 0)
+        self.status_label = QLabel("-")
         self.status_dropdown = QComboBox()
         self.status_dropdown.addItems(["", "Active", "Sent for Calibration", "Retired"])
+        form_layout.addWidget(self.status_label, 4, 1)
+        form_layout.addWidget(self.status_dropdown, 4, 2)
 
-        self.populate_tool_type_dropdown()
-
-        self.right_layout.addWidget(self.serial_input)
-        self.right_layout.addWidget(self.type_dropdown)
-        self.right_layout.addWidget(self.date_input)
-        self.right_layout.addWidget(self.status_dropdown)
-
-        center_layout.addLayout(label_layout)
-        center_layout.addLayout(self.middle_layout)
-        center_layout.addLayout(self.right_layout)
-
-        layout.addLayout(center_layout)
+        layout.addLayout(form_layout)
 
         # Submit Button
         submit_button = QPushButton("Submit Change")
