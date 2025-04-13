@@ -2,11 +2,12 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QMessageBox, QGridLayout
 )
-from PySide6.QtCore import Qt, QDate, QTimer
+from PySide6.QtCore import Qt, QTimer
 from database.db import get_db
-from models.models import ToolRegistration, ToolType, ValidationRecord
+from models.models import ToolRegistration, ValidationRecord
 from utils.app_context import app_context
 from datetime import date
+from dateutil.relativedelta import relativedelta
 
 
 class ValidationPage(QMainWindow):
@@ -37,7 +38,7 @@ class ValidationPage(QMainWindow):
         self.search_timer.timeout.connect(self.search_tool)
 
         # Trigger timer when user types
-        self.serial_input.textChanged.connect(self.on_serial_input_changed)
+        self.serial_input.returnPressed.connect(self.search_tool)
 
         self.status_display = QLabel("")
 
@@ -60,10 +61,15 @@ class ValidationPage(QMainWindow):
         form_layout.addWidget(QLabel("Actual Reading"), 0, 3)
         form_layout.addWidget(QLabel("Result"), 0, 4)
 
-        # Tool Type Row
-        form_layout.addWidget(QLabel("Tool Type Name:"), 1, 0)
+        # Tool Type Name Display (before the form)
+        type_layout = QHBoxLayout()
+        type_title = QLabel("Tool Type Name:")
+        type_title.setStyleSheet("font-weight: bold;")
         self.type_label = QLabel("-")
-        form_layout.addWidget(self.type_label, 1, 1)
+        type_layout.addWidget(type_title)
+        type_layout.addWidget(self.type_label)
+        layout.addLayout(type_layout)
+
 
         # Block Rows
         labels = ["Block 1:", "Block 2:", "Block 3:"]
@@ -79,6 +85,7 @@ class ValidationPage(QMainWindow):
             tolerance_label = QLabel("-")
             reading_input = QLineEdit()
             result_label = QLabel("")
+
             result_label.setStyleSheet("font-weight: bold;")
 
             self.block_labels.append(block_label)
@@ -108,7 +115,7 @@ class ValidationPage(QMainWindow):
         button_layout.addWidget(self.submit_button)
 
         layout.addLayout(button_layout)
-        
+
         # Back to Dashboard Button
         self.button_layout = QHBoxLayout()
         self.dashboard_button = QPushButton("Back to Dashboard")
@@ -121,6 +128,8 @@ class ValidationPage(QMainWindow):
         self.setCentralWidget(container)
 
     def search_tool(self):
+        messages = []
+        styles = []
         serial = self.serial_input.text().strip()
         db = next(get_db())
         self.tool = db.query(ToolRegistration).filter_by(serial_number=serial).first()
@@ -139,20 +148,58 @@ class ValidationPage(QMainWindow):
             .first()
         )
 
-        if validation_today:
-            self.status_display.setText("This tool has been validated today.")
-            self.status_display.setStyleSheet("color: green;")
-        elif self.tool.tool_status == "Retired":
-            self.status_display.setText("This tool is retired.")
-            self.status_display.setStyleSheet("color: red;")
+        # Start collecting status messages
+        status_messages = []
+        six_months_later = self.tool.last_calibration + relativedelta(months=6)
+        # First check tool condition
+        if self.tool.tool_status == "Retired":
+            status_messages.append("❌ This tool is retired.")
             self.submit_button.setEnabled(False)
         elif self.tool.tool_status == "Sent for Calibration":
-            self.status_display.setText("This tool is under calibration.")
-            self.status_display.setStyleSheet("color: orange;")
+            status_messages.append("🔧 This tool is under calibration.")
             self.submit_button.setEnabled(False)
+        elif validation_today:
+            # Get the most recent validation record (latest date)
+            latest_record = (
+                db.query(ValidationRecord)
+                .filter_by(serial_number=serial)
+                .order_by(ValidationRecord.validation_date.desc())
+                .first()
+            )
+
+            if latest_record and latest_record.validation_date == today:
+                if validation_today.validation_status == "Fail":
+                    status_messages.append("⚠️ This tool failed validation today.")
+                    # allow revalidation only if this is the latest record
+                    self.submit_button.setEnabled(True)
+                else:
+                    status_messages.append("✅ This tool has been validated today.")
+                    self.submit_button.setEnabled(False)
+            else:
+                status_messages.append("✅ This tool has been validated today.")
+                self.submit_button.setEnabled(False)
+
+        elif today > six_months_later:
+                status_messages.append(
+                    f"⛔ This tool is overdue for calibration. Tool was last calibrated on {self.tool.last_calibration.strftime('%Y-%m-%d')}."
+                )
+                self.submit_button.setEnabled(False)
         else:
-            self.status_display.setText("Tool ready for validation.")
-            self.status_display.setStyleSheet("color: white;")
+            status_messages.append("🟡 Tool ready for validation.")
+
+        # Now check calibration deadline
+        if self.tool.last_calibration and self.tool.tool_status not in ["Retired", "Sent for Calibration"]:
+            five_months_later = self.tool.last_calibration + relativedelta(months=5)
+            
+            if today > five_months_later:
+                status_messages.append(
+                    f"⚠️ This tool needs to be sent for calibration by {five_months_later.strftime('%Y-%m-%d')}."
+                )
+
+
+        # Join and display all status messages
+        self.status_display.setText("\n".join(status_messages))
+        self.status_display.setStyleSheet("color: white;")
 
         # Fill center data
         tool_type = self.tool.tool_type
@@ -160,18 +207,19 @@ class ValidationPage(QMainWindow):
             self.type_label.setText(tool_type.tool_name)
             blocks = [tool_type.block_1, tool_type.block_2, tool_type.block_3]
             tolerance = tool_type.tolerance
-            print(f"Tool Type: {tool_type.tool_name}")
-            
-            print(f"Tolerance Value: {tolerance}")
-            
             for i in range(3):
                 block = blocks[i]
-                lower = block - tolerance
-                upper = block + tolerance
-                print(f"Block {i+1}: {block:.5f} | Tolerance Range: {lower:.5f} ~ {upper:.5f}")
-                
-                self.block_labels[i].setText(f"{block:.5f}")
-                self.tolerance_labels[i].setText(f"{lower:.5f} ~ {upper:.5f}")
+                if block is not None:
+                    lower = block - tolerance
+                    upper = block + tolerance
+                    self.block_labels[i].setText(f"{block:.5f}")
+                    self.tolerance_labels[i].setText(f"{lower:.5f} ~ {upper:.5f}")
+                    self.reading_inputs[i].setEnabled(True)
+                else:
+                    self.block_labels[i].setText("-")
+                    self.tolerance_labels[i].setText("-")
+                    self.reading_inputs[i].clear()
+                    self.reading_inputs[i].setEnabled(False)
 
     def check_pass_fail(self):
         if not self.tool:
@@ -179,7 +227,7 @@ class ValidationPage(QMainWindow):
             return
 
         try:
-            readings = [float(r.text()) for r in self.reading_inputs]
+            readings = [float(r.text()) if r.text() else None for r in self.reading_inputs]
         except ValueError:
             QMessageBox.warning(self, "Error", "Please enter valid numeric readings.")
             return
@@ -190,9 +238,21 @@ class ValidationPage(QMainWindow):
 
         results = []
         for i in range(3):
-            low = blocks[i] - tol
-            high = blocks[i] + tol
-            if low <= readings[i] <= high:
+            block = blocks[i]
+            if block is None:
+                self.reading_result_labels[i].setText("N/A")
+                self.reading_result_labels[i].setStyleSheet("color: gray; font-weight: bold;")
+                continue
+
+            low = block - tol
+            high = block + tol
+            reading = readings[i]
+            if reading is None:
+                self.reading_result_labels[i].setText("N/A")
+                self.reading_result_labels[i].setStyleSheet("color: gray; font-weight: bold;")
+                continue
+
+            if low <= reading <= high:
                 results.append("Pass")
                 self.reading_result_labels[i].setText("Pass")
                 self.reading_result_labels[i].setStyleSheet("color: green; font-weight: bold;")
@@ -206,7 +266,6 @@ class ValidationPage(QMainWindow):
         self.result_label.setText(f"Result: {final}")
         self.result_label.setStyleSheet(f"color: {color}; font-weight: bold;")
 
-
     def submit_validation(self):
         if not self.tool:
             QMessageBox.warning(self, "Error", "Please search for a tool first.")
@@ -217,7 +276,16 @@ class ValidationPage(QMainWindow):
             return
 
         try:
-            readings = [float(r.text()) for r in self.reading_inputs]
+            readings = []
+            for i in range(3):
+                if self.block_labels[i].text() == "-":
+                    readings.append(None)
+                else:
+                    val = self.reading_inputs[i].text()
+                    if not val:
+                        QMessageBox.warning(self, "Error", f"Reading for Block {i+1} is required.")
+                        return
+                    readings.append(float(val))
         except ValueError:
             QMessageBox.warning(self, "Error", "Invalid numeric readings.")
             return
@@ -245,29 +313,24 @@ class ValidationPage(QMainWindow):
             reading_3=readings[2],
             validation_status=final_status,
         )
-
         db.add(record)
         db.commit()
         QMessageBox.information(self, "Success", "Validation record submitted.")
         self.clear_fields()
 
-
     def clear_fields(self):
+        self.serial_input.clear()
         self.tool = None
-        self.type_label.setText("-")
-        for b, t, r, res in zip(self.block_labels, self.tolerance_labels, self.reading_inputs, self.reading_result_labels):
-            b.setText("-")
-            t.setText("-")
-            r.clear()
-            res.setText("")
-        self.result_label.setText("")
-        self.result_label.setStyleSheet("")
+        self.result_label.clear()
+        self.status_display.clear()
+        for i in range(3):
+            self.reading_inputs[i].clear()
+            self.reading_result_labels[i].clear()
+            self.block_labels[i].clear()
+            self.tolerance_labels[i].clear()
 
     def open_dashboard(self):
-        from pages.dashboard import DashboardPage
-        self.page = DashboardPage()
-        self.page.show()
         self.close()
-        
-    def on_serial_input_changed(self):
-        self.search_timer.start(300)  # Wait 300 ms before searching
+        from pages.dashboard import DashboardPage
+        self.dashboard = DashboardPage()
+        self.dashboard.show()

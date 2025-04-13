@@ -38,7 +38,7 @@ class RegisterToolPage(QMainWindow):
         # Last Calibration Date
         layout.addWidget(QLabel("Last Calibration Date"))
         self.calibration_input = QLineEdit()
-        self.calibration_input.setPlaceholderText("YYYY-MM-DD")
+        self.calibration_input.setPlaceholderText("YYYY/MM/DD")
         layout.addWidget(self.calibration_input)
 
         # Submit Button
@@ -74,7 +74,7 @@ class RegisterToolPage(QMainWindow):
         try:
             last_calibration = datetime.strptime(self.calibration_input.text().strip(), "%Y/%m/%d").date()
         except ValueError:
-            QMessageBox.warning(self, "Input Error", "Invalid date format. Use YYYY-MM-DD.")
+            QMessageBox.warning(self, "Input Error", "Invalid date format. Use YYYY/MM/DD.")
             return
         tool_status = "Active"
 

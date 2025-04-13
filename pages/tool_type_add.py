@@ -62,15 +62,24 @@ class AddToolTypePage(QMainWindow):
 
     def add_tool_type(self):
         # Get input values
-        tool_name = self.tool_name_input.text()
-        block1 = self.block1_input.text()
-        block2 = self.block2_input.text()
-        block3 = self.block3_input.text()
-        tolerance = self.tolerance_input.text()
+        tool_name = self.tool_name_input.text().strip()
+        block1 = self.block1_input.text().strip()
+        block2 = self.block2_input.text().strip()
+        block3 = self.block3_input.text().strip()
+        tolerance = self.tolerance_input.text().strip()
 
-        # Validation to ensure all fields are filled in
-        if not tool_name or not block1 or not block2 or not block3 or not tolerance:
-            QMessageBox.warning(self, "Error", "Please fill in all fields.")
+        # Validate required fields only (block2 and block3 are optional)
+        if not tool_name or not block1 or not tolerance:
+            QMessageBox.warning(self, "Error", "Tool name, Block 1, and Tolerance are required.")
+            return
+
+        try:
+            block1 = float(block1)
+            block2 = float(block2) if block2 else None
+            block3 = float(block3) if block3 else None
+            tolerance = float(tolerance)
+        except ValueError:
+            QMessageBox.warning(self, "Error", "Blocks and Tolerance must be valid numbers.")
             return
 
         db = next(get_db())
@@ -90,19 +99,18 @@ class AddToolTypePage(QMainWindow):
             tolerance=tolerance
         )
 
-        # Add to the database
-        db.add(new_tool_type)
-        db.commit()
-
-        # Success message
-        QMessageBox.information(self, "Success", "Tool Type added successfully!")
-
-        # Clear fields after submission
-        self.tool_name_input.clear()
-        self.block1_input.clear()
-        self.block2_input.clear()
-        self.block3_input.clear()
-        self.tolerance_input.clear()
+        try:
+            db.add(new_tool_type)
+            db.commit()
+            QMessageBox.information(self, "Success", "Tool Type added successfully!")
+            self.tool_name_input.clear()
+            self.block1_input.clear()
+            self.block2_input.clear()
+            self.block3_input.clear()
+            self.tolerance_input.clear()
+        except Exception as e:
+            db.rollback()
+            QMessageBox.critical(self, "Database Error", f"Failed to add tool type: {str(e)}")
 
     def open_dashboard(self):
         from pages.dashboard import DashboardPage

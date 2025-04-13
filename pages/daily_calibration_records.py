@@ -11,13 +11,13 @@ from models.models import ToolRegistration, ToolType, ValidationRecord, LabTechn
 class DailyCalibrationRecordsPage(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Daily Calibration Validation Records")
+        self.setWindowTitle("Daily Validation Records")
         self.setMinimumSize(1000, 600)
 
         layout = QVBoxLayout()
 
         # Title
-        title = QLabel("Daily Calibration Validation Records")
+        title = QLabel("Daily Validation Records")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("font-size: 20px; font-weight: bold;")
         layout.addWidget(title)
@@ -58,7 +58,9 @@ class DailyCalibrationRecordsPage(QWidget):
             "Block 3", "Reading 3", "Pass/Fail 3",
             "Tolerance", "Final Result", "Technician"
         ])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
+        self.table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
+        self.table.setSizeAdjustPolicy(QTableWidget.AdjustToContents)
         layout.addWidget(self.table)
 
         # Shortcut for Ctrl + F to focus on search input
@@ -124,13 +126,24 @@ class DailyCalibrationRecordsPage(QWidget):
                     item.setTextAlignment(Qt.AlignCenter)
 
                     # Apply color to Pass/Fail columns
-                    if col_index == 4 or col_index == 7 or col_index == 10:  # Pass/Fail columns
+                    if col_index in [4, 7, 10]:  # Pass/Fail 1-3 columns
                         if value == 'Pass':
                             item.setForeground(Qt.green)
                         elif value == 'Fail':
                             item.setForeground(Qt.red)
 
+                    # Make Final Result bold and green
+                    if col_index == 12:  # Final Result column
+                        if value == 'Pass':
+                            item.setForeground(Qt.green)
+                        elif value == 'Fail':
+                            item.setForeground(Qt.red)
+                        font = item.font()
+                        font.setBold(True)
+                        item.setFont(font)
+
                     self.table.setItem(row_index, col_index, item)
+
 
             if not records:
                 QMessageBox.information(self, "No Records", "No validation records found for this date.")

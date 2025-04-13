@@ -59,6 +59,11 @@ class LoginPage(QMainWindow):
         self.button_layout.addWidget(self.register_button)
 
         self.layout.addLayout(self.button_layout)
+        
+        self.forgot_password_button = QPushButton("Forgot Password?")
+        self.forgot_password_button.clicked.connect(self.open_forgot_password_dialog)
+        self.layout.addWidget(self.forgot_password_button)
+
 
         # Center form in outer layout
         self.outer_layout.addStretch()
@@ -95,3 +100,7 @@ class LoginPage(QMainWindow):
         self.register_page.show()
         self.close()
 
+    def open_forgot_password_dialog(self):
+        from pages.change_password import ForgotPasswordDialog
+        dialog = ForgotPasswordDialog()
+        dialog.exec()

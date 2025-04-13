@@ -111,15 +111,15 @@ class ToolValidationRecordsPage(QWidget):
             return
 
         # Get the selected date range
-        start_date = self.start_date_edit.date().toPyDate()
-        end_date = self.end_date_edit.date().toPyDate()
-
+        start_date = self.start_date_edit.date().toPython()
+        end_date = self.end_date_edit.date().toPython()
+        
         if start_date > end_date:
             QMessageBox.warning(self, "Date Error", "Start date cannot be later than end date.")
             return
 
         # Ensure the range does not exceed 6 months
-        if (end_date - start_date).days > 180:
+        if (end_date - start_date).days > 190:
             QMessageBox.warning(self, "Date Error", "The date range cannot exceed 6 months.")
             return
 

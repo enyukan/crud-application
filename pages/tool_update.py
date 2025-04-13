@@ -2,9 +2,8 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QComboBox, QLineEdit, QPushButton, QMessageBox,
     QGridLayout, QGroupBox
-
 )
-from PySide6.QtCore import Qt, QDateTime, QTimer
+from PySide6.QtCore import Qt, QDateTime
 from database.db import get_db
 from models.models import ToolType, ToolRegistration
 from utils.app_context import app_context
@@ -18,9 +17,7 @@ class UpdateToolPage(QMainWindow):
         layout = QVBoxLayout()
         layout.setContentsMargins(50, 50, 50, 50)
         layout.setSpacing(15)
-        
-        
-        
+
         # Top section: Dropdown to select tool type and select button
         title = QLabel("Update Tool Type")
         title.setAlignment(Qt.AlignCenter)
@@ -32,12 +29,8 @@ class UpdateToolPage(QMainWindow):
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Enter Tool Serial Number")
         top_layout.addWidget(self.search_input)
-        # Debounced search with QTimer
-        self.search_timer = QTimer()
-        self.search_timer.setSingleShot(True)
-        self.search_timer.setInterval(400)  # Wait 400ms after typing stops
-        self.search_timer.timeout.connect(self.load_tool_data)
-        self.search_input.textChanged.connect(lambda: self.search_timer.start())
+        # Connect the 'Enter' key press to the search function
+        self.search_input.returnPressed.connect(self.load_tool_data)
 
         layout.addLayout(top_layout)
 
@@ -94,7 +87,7 @@ class UpdateToolPage(QMainWindow):
         submit_button = QPushButton("Submit Change")
         submit_button.clicked.connect(self.submit_change)
         layout.addWidget(submit_button)
-        
+
         # Back to Dashboard Button
         self.button_layout = QHBoxLayout()
         self.dashboard_button = QPushButton("Back to Dashboard")
@@ -122,13 +115,13 @@ class UpdateToolPage(QMainWindow):
         if tool:
             self.serial_label.setText(tool.serial_number)
             self.type_label.setText(tool.tool_type.tool_name if tool.tool_type else "-")
-            self.date_label.setText(tool.last_calibration.strftime("%Y-%m-%d"))
+            self.date_label.setText(tool.last_calibration.strftime("%Y/%m/%d"))
             self.status_label.setText(tool.tool_status)
 
             # Prefill right inputs with current data
             self.serial_input.setText(tool.serial_number)
             self.type_dropdown.setCurrentText(tool.tool_type.tool_name if tool.tool_type else "")
-            self.date_input.setText(tool.last_calibration.strftime("%Y-%m-%d"))
+            self.date_input.setText(tool.last_calibration.strftime("%Y/%m/%d"))
             self.status_dropdown.setCurrentText(tool.tool_status)
         else:
             QMessageBox.warning(self, "Error", "Tool not found.")
@@ -156,7 +149,7 @@ class UpdateToolPage(QMainWindow):
             tool.tool_type_id = new_type_id
             updated = True
         if new_date_str:
-            new_date = QDateTime.fromString(new_date_str, "yyyy-MM-dd").toPython()
+            new_date = QDateTime.fromString(new_date_str, "yyyy/MM/dd").toPython()
             if new_date != tool.last_calibration:
                 tool.last_calibration = new_date
                 updated = True

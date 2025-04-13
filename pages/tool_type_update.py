@@ -105,7 +105,6 @@ class UpdateToolTypePage(QMainWindow):
         layout.addLayout(center_layout)
         layout.addLayout(button_row_layout)
 
-
         # Back to dashboard
         self.button_layout = QHBoxLayout()
         self.dashboard_button = QPushButton("Back to Dashboard")
@@ -117,6 +116,11 @@ class UpdateToolTypePage(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
+
+    def keyPressEvent(self, event):
+        # Check if the pressed key is "Enter"
+        if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+            self.submit_change()
 
     def populate_tool_type_dropdown(self):
         # Clear the existing items from the dropdown
@@ -149,39 +153,48 @@ class UpdateToolTypePage(QMainWindow):
 
             # Populate the right section with input fields for modification
             self.block1_input.setText(str(tool.block_1))
-            self.block2_input.setText(str(tool.block_2))
-            self.block3_input.setText(str(tool.block_3))
+            self.block2_data_label.setText(str(tool.block_2) if tool.block_2 is not None else "-")
+            self.block3_data_label.setText(str(tool.block_3) if tool.block_3 is not None else "-")
             self.tolerance_input.setText(str(tool.tolerance))
         else:
             QMessageBox.warning(self, "Error", "Tool type not found.")
 
     def submit_change(self):
         tool_name = self.tool_type_dropdown.currentText()
-        db = next(get_db())
+        if tool_name == "Select Tool Type" or not tool_name:
+            QMessageBox.warning(self, "Error", "No tool type selected.")
+            return
 
+        db = next(get_db())
         tool = db.query(ToolType).filter(ToolType.tool_name == tool_name).first()
 
         if tool:
-            # Get data from the input fields (right column)
-            new_block1 = self.block1_input.text()
-            new_block2 = self.block2_input.text()
-            new_block3 = self.block3_input.text()
-            new_tolerance = self.tolerance_input.text()
+            try:
+                # Get and process input data
+                new_block1 = self.block1_input.text().strip()
+                new_block2 = self.block2_input.text().strip()
+                new_block3 = self.block3_input.text().strip()
+                new_tolerance = self.tolerance_input.text().strip()
 
-            # Update only if new data is provided
-            if new_block1:
+                # Required fields
+                if not new_block1 or not new_tolerance:
+                    QMessageBox.warning(self, "Error", "Block 1 and Tolerance are required.")
+                    return
+
                 tool.block_1 = float(new_block1)
-            if new_block2:
-                tool.block_2 = float(new_block2)
-            if new_block3:
-                tool.block_3 = float(new_block3)
-            if new_tolerance:
+                tool.block_2 = float(new_block2) if new_block2 else None
+                tool.block_3 = float(new_block3) if new_block3 else None
                 tool.tolerance = float(new_tolerance)
 
-            db.commit()
-            QMessageBox.information(self, "Success", "Tool information updated successfully!")
-            self.load_tool_data()  # Refresh the displayed data
+                db.commit()
+                QMessageBox.information(self, "Success", "Tool information updated successfully!")
+                self.load_tool_data()  # Refresh the displayed data
 
+            except ValueError:
+                QMessageBox.warning(self, "Error", "Block values and Tolerance must be valid numbers.")
+            except Exception as e:
+                db.rollback()
+                QMessageBox.critical(self, "Error", f"Failed to update tool: {str(e)}")
         else:
             QMessageBox.warning(self, "Error", "Tool type not found.")
 
@@ -207,7 +220,6 @@ class UpdateToolTypePage(QMainWindow):
                 self.populate_tool_type_dropdown()  # Refresh the dropdown
             else:
                 QMessageBox.warning(self, "Error", "Tool type not found.")
-
 
     def clear_tool_data(self):
         # Clear all data fields after deletion

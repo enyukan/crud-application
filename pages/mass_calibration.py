@@ -126,13 +126,18 @@ class MassCalibrationPage(QWidget):
             db_gen = get_db()
             db: Session = next(db_gen)
 
-            self.all_tools = db.query(ToolRegistration).filter(ToolRegistration.tool_type_id == tool_type_id).all()
+            # Only fetch tools that are NOT retired
+            self.all_tools = db.query(ToolRegistration).filter(
+                ToolRegistration.tool_type_id == tool_type_id,
+                ToolRegistration.tool_status != "Retired"
+            ).all()
             db_gen.close()
 
             self.display_tools(self.all_tools)
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load tools:\n{str(e)}")
+
 
     def display_tools(self, tools):
         self.table.setRowCount(len(tools))

@@ -39,7 +39,7 @@ class DashboardPage(QMainWindow):
         # View Records Button with Dropdown Menu
         self.view_records_menu = QMenu()
         self.view_records_menu.addAction("Tool Validation Records", self.open_tool_validation_records)
-        self.view_records_menu.addAction("Daily Calibration Records", self.open_daily_calibration_records)
+        self.view_records_menu.addAction("Daily Validation Records", self.open_daily_calibration_records)
 
         self.view_records_button = QPushButton("View Records")
         self.view_records_button.setMenu(self.view_records_menu)

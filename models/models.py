@@ -5,13 +5,16 @@ from sqlalchemy.orm import relationship
 
 class ToolType(Base):
     __tablename__ = "tool_types"
+    
     tool_type_id = Column(Integer, primary_key=True)
-    tool_name = Column(String)
-    block_1 = Column(Float)
-    block_2 = Column(Float)
-    block_3 = Column(Float)
-    tolerance = Column(Float)
+    tool_name = Column(String, nullable=False)
+    block_1 = Column(Float, nullable=False)
+    block_2 = Column(Float, nullable=True)  # <- allow NULL
+    block_3 = Column(Float, nullable=True)  # <- allow NULL
+    tolerance = Column(Float, nullable=False)
+
     tools = relationship("ToolRegistration", back_populates="tool_type")
+
 
 class LabTechnician(Base):
     __tablename__ = "lab_technicians"
@@ -37,7 +40,7 @@ class ValidationRecord(Base):
     validation_date = Column(Date)
     technician_id = Column(Integer, ForeignKey("lab_technicians.technician_id"))
     reading_1 = Column(Float)
-    reading_2 = Column(Float)
-    reading_3 = Column(Float)
+    reading_2 = Column(Float, nullable=True)  # <- allow NULL
+    reading_3 = Column(Float, nullable=True)  # <- allow NULL
     validation_status = Column(String)
     technician = relationship("LabTechnician", backref="validations")
