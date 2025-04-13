@@ -2,6 +2,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QDateEdit, QPushButton,
     QTableWidget, QTableWidgetItem, QMessageBox, QHeaderView, QScrollArea, QHBoxLayout, QLineEdit
 )
+from PySide6.QtGui import QShortcut
 from PySide6.QtCore import Qt, QDate
 from sqlalchemy.orm import Session
 from database.db import get_db
@@ -10,13 +11,13 @@ from models.models import ToolRegistration, ToolType, ValidationRecord, LabTechn
 class DailyCalibrationRecordsPage(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Daily Calibration Records")
+        self.setWindowTitle("Daily Calibration Validation Records")
         self.setMinimumSize(1000, 600)
 
         layout = QVBoxLayout()
 
         # Title
-        title = QLabel("Daily Calibration Records")
+        title = QLabel("Daily Calibration Validation Records")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("font-size: 20px; font-weight: bold;")
         layout.addWidget(title)
@@ -25,14 +26,8 @@ class DailyCalibrationRecordsPage(QWidget):
         self.date_edit = QDateEdit()
         self.date_edit.setCalendarPopup(True)
         self.date_edit.setDate(QDate.currentDate())
-        layout.addWidget(QLabel("New Calibration Date:"))
+        layout.addWidget(QLabel("Validation Date:"))
         layout.addWidget(self.date_edit)
-
-        # QLineEdit for user to input the date manually
-        self.date_input = QLineEdit(self)
-        self.date_input.setPlaceholderText("Enter date (YYYY-MM-DD)")
-        self.date_input.textChanged.connect(self.update_calendar_from_input)
-        layout.addWidget(self.date_input)
 
         # Load button
         self.load_button = QPushButton("Load Records")
@@ -45,6 +40,13 @@ class DailyCalibrationRecordsPage(QWidget):
         self.dashboard_button.clicked.connect(self.open_dashboard)
         self.button_layout.addWidget(self.dashboard_button)
         layout.addLayout(self.button_layout)
+        
+        # Search bar for searching records
+        self.search_input = QLineEdit(self)
+        self.search_input.setPlaceholderText("Search records...")
+        self.search_input.textChanged.connect(self.search_records)
+        layout.addWidget(self.search_input)
+
 
         # Table widget
         self.table = QTableWidget()
@@ -59,20 +61,30 @@ class DailyCalibrationRecordsPage(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         layout.addWidget(self.table)
 
+        # Shortcut for Ctrl + F to focus on search input
+        self.search_shortcut = QShortcut(Qt.CTRL + Qt.Key_F, self)
+        self.search_shortcut.activated.connect(self.focus_search_input)
+
         self.setLayout(layout)
 
-    def update_calendar_from_input(self):
-        """Update the calendar when the user types a date."""
-        input_date = self.date_input.text()
-        try:
-            date = QDate.fromString(input_date, "yyyy-MM-dd")
-            if date.isValid():
-                self.date_edit.setDate(date)  # Update the QDateEdit calendar
-                self.date_input.setStyleSheet("background-color: white;")  # Reset background color
-            else:
-                self.date_input.setStyleSheet("background-color: pink;")  # Invalid date
-        except:
-            self.date_input.setStyleSheet("background-color: pink;")  # Invalid date
+    def focus_search_input(self):
+        """Focus on the search input field when Ctrl + F is pressed."""
+        self.search_input.setFocus()
+
+    def search_records(self):
+        """Search for records in the table based on the user's input."""
+        search_text = self.search_input.text().lower()
+        row_count = self.table.rowCount()
+
+        for row in range(row_count):
+            match_found = False
+            for col in range(self.table.columnCount()):
+                item = self.table.item(row, col)
+                if item and search_text in item.text().lower():
+                    match_found = True
+                    break  # If a match is found in any column, stop checking further columns.
+
+            self.table.setRowHidden(row, not match_found)  # Hide rows that don't match the search
 
     def load_records(self):
         selected_date = self.date_edit.date().toString("yyyy-MM-dd")  # Get date from QDateEdit

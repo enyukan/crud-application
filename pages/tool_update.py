@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QGridLayout, QGroupBox
 
 )
-from PySide6.QtCore import Qt, QDateTime
+from PySide6.QtCore import Qt, QDateTime, QTimer
 from database.db import get_db
 from models.models import ToolType, ToolRegistration
 from utils.app_context import app_context
@@ -19,6 +19,8 @@ class UpdateToolPage(QMainWindow):
         layout.setContentsMargins(50, 50, 50, 50)
         layout.setSpacing(15)
         
+        
+        
         # Top section: Dropdown to select tool type and select button
         title = QLabel("Update Tool Type")
         title.setAlignment(Qt.AlignCenter)
@@ -29,10 +31,14 @@ class UpdateToolPage(QMainWindow):
         top_layout = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Enter Tool Serial Number")
-        search_button = QPushButton("Search Tool")
-        search_button.clicked.connect(self.load_tool_data)
         top_layout.addWidget(self.search_input)
-        top_layout.addWidget(search_button)
+        # Debounced search with QTimer
+        self.search_timer = QTimer()
+        self.search_timer.setSingleShot(True)
+        self.search_timer.setInterval(400)  # Wait 400ms after typing stops
+        self.search_timer.timeout.connect(self.load_tool_data)
+        self.search_input.textChanged.connect(lambda: self.search_timer.start())
+
         layout.addLayout(top_layout)
 
         # Center layout using a grid

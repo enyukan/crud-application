@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QMessageBox, QGridLayout
 )
-from PySide6.QtCore import Qt, QDate
+from PySide6.QtCore import Qt, QDate, QTimer
 from database.db import get_db
 from models.models import ToolRegistration, ToolType, ValidationRecord
 from utils.app_context import app_context
@@ -30,12 +30,18 @@ class ValidationPage(QMainWindow):
         search_layout = QHBoxLayout()
         self.serial_input = QLineEdit()
         self.serial_input.setPlaceholderText("Enter Tool Serial Number")
-        self.search_button = QPushButton("Search Tool")
-        self.search_button.clicked.connect(self.search_tool)
+
+        # Timer for delay in search
+        self.search_timer = QTimer(self)
+        self.search_timer.setSingleShot(True)
+        self.search_timer.timeout.connect(self.search_tool)
+
+        # Trigger timer when user types
+        self.serial_input.textChanged.connect(self.on_serial_input_changed)
+
         self.status_display = QLabel("")
 
         search_layout.addWidget(self.serial_input)
-        search_layout.addWidget(self.search_button)
 
         layout.addLayout(search_layout)
         layout.addWidget(self.status_display)
@@ -84,32 +90,6 @@ class ValidationPage(QMainWindow):
             form_layout.addWidget(tolerance_label, i + 2, 2)
             form_layout.addWidget(reading_input, i + 2, 3)
             form_layout.addWidget(result_label, i + 2, 4)
-
-
-        # DB Fetched
-        self.type_label = QLabel("-")
-        self.block_labels = [QLabel("-") for _ in range(3)]
-        self.tolerance_labels = [QLabel("-") for _ in range(3)]
-
-        form_layout.addWidget(self.type_label, 1, 1)
-        for i in range(3):
-            form_layout.addWidget(self.block_labels[i], i + 2, 1)
-            form_layout.addWidget(self.tolerance_labels[i], i + 2, 2)
-
-        # User Input
-        self.reading_inputs = []
-        self.reading_result_labels = []
-
-        for i in range(3):
-            input_field = QLineEdit()
-            result_label = QLabel("")
-            result_label.setStyleSheet("font-weight: bold;")  # styling
-            self.reading_inputs.append(input_field)
-            self.reading_result_labels.append(result_label)
-            
-            form_layout.addWidget(input_field, i + 2, 3)
-            form_layout.addWidget(result_label, i + 2, 4)  # Add label to right of input
-
 
         layout.addLayout(form_layout)
 
@@ -180,13 +160,18 @@ class ValidationPage(QMainWindow):
             self.type_label.setText(tool_type.tool_name)
             blocks = [tool_type.block_1, tool_type.block_2, tool_type.block_3]
             tolerance = tool_type.tolerance
-
+            print(f"Tool Type: {tool_type.tool_name}")
+            
+            print(f"Tolerance Value: {tolerance}")
+            
             for i in range(3):
-                self.block_labels[i].setText(f"{blocks[i]}")
-                self.tolerance_labels[i].setText(
-                    f"{blocks[i] - tolerance:.3f} ~ {blocks[i] + tolerance:.3f}"
-                )
-
+                block = blocks[i]
+                lower = block - tolerance
+                upper = block + tolerance
+                print(f"Block {i+1}: {block:.5f} | Tolerance Range: {lower:.5f} ~ {upper:.5f}")
+                
+                self.block_labels[i].setText(f"{block:.5f}")
+                self.tolerance_labels[i].setText(f"{lower:.5f} ~ {upper:.5f}")
 
     def check_pass_fail(self):
         if not self.tool:
@@ -283,3 +268,6 @@ class ValidationPage(QMainWindow):
         self.page = DashboardPage()
         self.page.show()
         self.close()
+        
+    def on_serial_input_changed(self):
+        self.search_timer.start(300)  # Wait 300 ms before searching

@@ -42,6 +42,9 @@ class LoginPage(QMainWindow):
         self.password_input.setEchoMode(QLineEdit.Password)
         self.layout.addWidget(QLabel("Password"))
         self.layout.addWidget(self.password_input)
+        
+        self.username_input.returnPressed.connect(self.login)
+        self.password_input.returnPressed.connect(self.login)
 
         # Buttons
         self.button_layout = QHBoxLayout()
@@ -49,6 +52,7 @@ class LoginPage(QMainWindow):
         self.login_button = QPushButton("Login")
         self.login_button.clicked.connect(self.login)
         self.button_layout.addWidget(self.login_button)
+        self.login_button.setDefault(True)
 
         self.register_button = QPushButton("Register")
         self.register_button.clicked.connect(self.open_register)

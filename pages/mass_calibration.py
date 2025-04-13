@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QComboBox, QTableWidget,
     QTableWidgetItem, QHBoxLayout, QPushButton, QMessageBox,
-    QDateEdit, QHeaderView, QCheckBox
+    QDateEdit, QHeaderView, QCheckBox, QLineEdit, QSizePolicy
 )
 from PySide6.QtCore import Qt, QDate
 from database.db import get_db
@@ -9,13 +9,14 @@ from sqlalchemy.orm import Session
 from models.models import ToolType, ToolRegistration
 from utils.app_context import app_context
 
+
 class MassCalibrationPage(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Mass Calibration Update")
         self.setMinimumSize(900, 600)
 
-        layout = QVBoxLayout()  # This is the main layout for the page
+        layout = QVBoxLayout()
 
         # Title
         title = QLabel("Mass Calibration Update")
@@ -27,11 +28,27 @@ class MassCalibrationPage(QWidget):
         self.tool_type_dropdown = QComboBox()
         self.tool_type_dropdown.currentIndexChanged.connect(self.load_tools)
         layout.addWidget(self.tool_type_dropdown)
-        
-        # Select All button
+
+        # Select All + Search Bar Row (both fill the row)
+        top_row_layout = QHBoxLayout()
+
+        # Select All button (will expand to fill the row)
         self.select_all_button = QPushButton("Select All Tools")
         self.select_all_button.clicked.connect(self.select_all_tools)
-        layout.addWidget(self.select_all_button)
+        self.select_all_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        top_row_layout.addWidget(self.select_all_button)
+
+        # Search Bar (will expand to fill the row)
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search...")
+        self.search_input.textChanged.connect(self.filter_tools)
+        self.search_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        top_row_layout.addWidget(self.search_input)
+
+        # Add stretch to push both elements to fill the row
+        top_row_layout.addStretch()
+
+        layout.addLayout(top_row_layout)
 
         # Table
         self.table = QTableWidget()
@@ -54,32 +71,29 @@ class MassCalibrationPage(QWidget):
         update_layout.addWidget(QLabel("New Calibration Date:"))
         update_layout.addWidget(self.date_edit)
 
-        # Add checkboxes to allow the user to select which fields to update
         self.update_status_checkbox = QCheckBox("Update Status")
-        self.update_status_checkbox.setChecked(True)  # Default checked
+        self.update_status_checkbox.setChecked(True)
         update_layout.addWidget(self.update_status_checkbox)
 
         self.update_date_checkbox = QCheckBox("Update Calibration Date")
-        self.update_date_checkbox.setChecked(True)  # Default checked
+        self.update_date_checkbox.setChecked(True)
         update_layout.addWidget(self.update_date_checkbox)
 
         layout.addLayout(update_layout)
 
-        # Update button
+        # Update Button
         self.update_button = QPushButton("Update Selected Tools")
         self.update_button.clicked.connect(self.update_selected_tools)
         layout.addWidget(self.update_button)
-        
+
         # Back to Dashboard Button
         self.button_layout = QHBoxLayout()
         self.dashboard_button = QPushButton("Back to Dashboard")
         self.dashboard_button.clicked.connect(self.open_dashboard)
         self.button_layout.addWidget(self.dashboard_button)
-
-        # Add button layout to the main layout
         layout.addLayout(self.button_layout)
 
-        self.setLayout(layout)  # Set the main layout for the page
+        self.setLayout(layout)
         self.load_tool_types()
 
     def load_tool_types(self):
@@ -112,22 +126,32 @@ class MassCalibrationPage(QWidget):
             db_gen = get_db()
             db: Session = next(db_gen)
 
-            tools = db.query(ToolRegistration).filter(ToolRegistration.tool_type_id == tool_type_id).all()
-            self.table.setRowCount(len(tools))
-
-            for row, tool in enumerate(tools):
-                # Select checkbox
-                checkbox = QCheckBox()
-                self.table.setCellWidget(row, 0, checkbox)
-
-                self.table.setItem(row, 1, QTableWidgetItem(tool.serial_number))
-                self.table.setItem(row, 2, QTableWidgetItem(tool.tool_status))
-                self.table.setItem(row, 3, QTableWidgetItem(tool.last_calibration.strftime("%Y-%m-%d") if tool.last_calibration else "N/A"))
-
+            self.all_tools = db.query(ToolRegistration).filter(ToolRegistration.tool_type_id == tool_type_id).all()
             db_gen.close()
+
+            self.display_tools(self.all_tools)
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load tools:\n{str(e)}")
+
+    def display_tools(self, tools):
+        self.table.setRowCount(len(tools))
+        for row, tool in enumerate(tools):
+            checkbox = QCheckBox()
+            self.table.setCellWidget(row, 0, checkbox)
+
+            self.table.setItem(row, 1, QTableWidgetItem(tool.serial_number))
+            self.table.setItem(row, 2, QTableWidgetItem(tool.tool_status))
+            self.table.setItem(row, 3, QTableWidgetItem(
+                tool.last_calibration.strftime("%Y-%m-%d") if tool.last_calibration else "N/A"
+            ))
+
+    def filter_tools(self, text):
+        if not hasattr(self, 'all_tools'):
+            return
+
+        filtered = [tool for tool in self.all_tools if text.lower() in tool.serial_number.lower()]
+        self.display_tools(filtered)
 
     def update_selected_tools(self):
         new_status = self.status_dropdown.currentText() if self.update_status_checkbox.isChecked() else None
@@ -153,27 +177,23 @@ class MassCalibrationPage(QWidget):
                             tool.tool_status = new_status
                         if new_date:
                             tool.last_calibration = new_date
-                        tool.modified_by = current_user.technician_id  # assuming this is the correct field
-                        # tool.last_modified is auto-handled by SQLAlchemy on update
+                        tool.modified_by = current_user.technician_id
                         updated += 1
 
             db.commit()
             db_gen.close()
 
             QMessageBox.information(self, "Success", f"Updated {updated} tools.")
-            self.load_tools()  # Reload after update
+            self.load_tools()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to update tools:\n{str(e)}")
 
     def select_all_tools(self):
-        # Check if all checkboxes are selected
         all_selected = all(self.table.cellWidget(row, 0).isChecked() for row in range(self.table.rowCount()))
-
-        # Toggle selection based on the current state
         for row in range(self.table.rowCount()):
             checkbox = self.table.cellWidget(row, 0)
-            checkbox.setChecked(not all_selected)  # If all are selected, deselect; otherwise, select
+            checkbox.setChecked(not all_selected)
 
     def open_dashboard(self):
         from pages.dashboard import DashboardPage

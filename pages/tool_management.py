@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel,
-    QPushButton, QMenu, QHBoxLayout
+    QPushButton, QMenu, QHBoxLayout, QSpacerItem, QSizePolicy
 )
 from PySide6.QtCore import Qt
 
@@ -11,14 +11,25 @@ class ToolManagementPage(QMainWindow):
         self.setWindowTitle("QC Calibration")
         self.setFixedSize(1000, 600)
 
+        # Create the outer layout that holds everything
         self.outer_layout = QVBoxLayout()
         self.outer_layout.setContentsMargins(100, 100, 100, 100)
 
+        # Create a spacer to push everything to the center
+        #self.top_spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        #self.outer_layout.addItem(self.top_spacer)
+
+        # Centering the title and buttons together in a vertical layout
+        self.center_layout = QVBoxLayout()
+        self.center_layout.setAlignment(Qt.AlignCenter)
+
+        # Title
         self.title = QLabel("Tool Management")
         self.title.setAlignment(Qt.AlignCenter)
         self.title.setStyleSheet("font-size: 25px; font-weight: bold;")
-        self.outer_layout.addWidget(self.title)
+        self.center_layout.addWidget(self.title)
 
+        # Button Layout
         self.button_layout = QVBoxLayout()
 
         # Dropdown: Tool Type Management
@@ -45,8 +56,17 @@ class ToolManagementPage(QMainWindow):
         self.dashboard_button.clicked.connect(self.open_dashboard)
         self.button_layout.addWidget(self.dashboard_button)
 
-        self.outer_layout.addLayout(self.button_layout)
+        # Add the button layout to the center layout
+        self.center_layout.addLayout(self.button_layout)
 
+        # Add a bottom spacer to center the layout vertically
+        #self.bottom_spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        #self.center_layout.addItem(self.bottom_spacer)
+
+        # Add the center layout to the outer layout
+        self.outer_layout.addLayout(self.center_layout)
+
+        # Set the container and central widget
         container = QWidget()
         container.setLayout(self.outer_layout)
         self.setCentralWidget(container)

@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton,
-    QTableWidget, QTableWidgetItem, QMessageBox, QHeaderView, QHBoxLayout
+    QTableWidget, QTableWidgetItem, QMessageBox, QHeaderView, QHBoxLayout, QDateEdit
 )
 from PySide6.QtCore import Qt, QDate
 from models.models import ToolRegistration, ToolType, ValidationRecord, LabTechnician
@@ -18,7 +18,7 @@ class ToolValidationRecordsPage(QWidget):
         self.layout = QVBoxLayout()
 
         # Title
-        title = QLabel("Tool Validation Records (Last 6 Months)")
+        title = QLabel("Tool Validation Records")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("font-size: 20px; font-weight: bold;")
         self.layout.addWidget(title)
@@ -28,17 +28,45 @@ class ToolValidationRecordsPage(QWidget):
         self.serial_input.setPlaceholderText("Enter Tool Serial Number")
         self.layout.addWidget(self.serial_input)
 
+        # Date range inputs (placed in the same row)
+        date_layout = QHBoxLayout()
+
+        # Date range inputs in the same row with calendar popup
+        date_range_layout = QHBoxLayout()
+
+        date_range_layout.addWidget(QLabel("Start Date:"))
+        self.start_date_edit = QDateEdit(self)
+        self.start_date_edit.setCalendarPopup(True)
+        self.start_date_edit.setDate(QDate.currentDate().addMonths(-6))  # Default to 6 months ago
+        self.start_date_edit.setDisplayFormat("yyyy-MM-dd")
+        date_range_layout.addWidget(self.start_date_edit)
+
+        date_range_layout.addWidget(QLabel("End Date:"))
+        self.end_date_edit = QDateEdit(self)
+        self.end_date_edit.setCalendarPopup(True)
+        self.end_date_edit.setDate(QDate.currentDate())  # Default to today
+        self.end_date_edit.setDisplayFormat("yyyy-MM-dd")
+        date_range_layout.addWidget(self.end_date_edit)
+
+        self.layout.addLayout(date_range_layout)
+
         # Load button
         self.load_button = QPushButton("Load Records")
         self.load_button.clicked.connect(self.load_records)
         self.layout.addWidget(self.load_button)
-        
+
         # Back to Dashboard Button
         self.button_layout = QHBoxLayout()
         self.dashboard_button = QPushButton("Back to Dashboard")
         self.dashboard_button.clicked.connect(self.open_dashboard)
         self.button_layout.addWidget(self.dashboard_button)
         self.layout.addLayout(self.button_layout)
+        
+        # Search bar for searching records
+        self.search_input = QLineEdit(self)
+        self.search_input.setPlaceholderText("Search records...")
+        self.search_input.textChanged.connect(self.search_records)
+        self.layout.addWidget(self.search_input)
 
         # Tool info
         self.tool_info_label = QLabel("")
@@ -60,11 +88,39 @@ class ToolValidationRecordsPage(QWidget):
 
         self.setLayout(self.layout)
 
+    def search_records(self):
+        """Search for records in the table based on the user's input."""
+        search_text = self.search_input.text().lower()
+        row_count = self.table.rowCount()
+
+        for row in range(row_count):
+            match_found = False
+            for col in range(self.table.columnCount()):
+                item = self.table.item(row, col)
+                if item and search_text in item.text().lower():
+                    match_found = True
+                    break  # If a match is found in any column, stop checking further columns.
+
+            self.table.setRowHidden(row, not match_found)  # Hide rows that don't match the search
+
     def load_records(self):
         serial = self.serial_input.text().strip()
 
         if not serial:
             QMessageBox.warning(self, "Input Error", "Please enter a tool serial number.")
+            return
+
+        # Get the selected date range
+        start_date = self.start_date_edit.date().toPyDate()
+        end_date = self.end_date_edit.date().toPyDate()
+
+        if start_date > end_date:
+            QMessageBox.warning(self, "Date Error", "Start date cannot be later than end date.")
+            return
+
+        # Ensure the range does not exceed 6 months
+        if (end_date - start_date).days > 180:
+            QMessageBox.warning(self, "Date Error", "The date range cannot exceed 6 months.")
             return
 
         try:
@@ -80,15 +136,15 @@ class ToolValidationRecordsPage(QWidget):
 
             self.tool_info_label.setText(f"Tool Serial Number: {serial} | Tool Type: {tool.tool_type.tool_name}")
 
-            # Get validation records (last 6 months)
-            six_months_ago = datetime.today() - timedelta(days=180)
+            # Get validation records within the selected date range
             records = (
                 db.query(ValidationRecord)
                 .options(joinedload(ValidationRecord.technician))  # eager load technician
                 .filter(
                     and_(
                         ValidationRecord.serial_number == tool.serial_number,
-                        ValidationRecord.validation_date >= six_months_ago
+                        ValidationRecord.validation_date >= start_date,
+                        ValidationRecord.validation_date <= end_date
                     )
                 )
                 .order_by(ValidationRecord.validation_date.desc())
@@ -120,7 +176,7 @@ class ToolValidationRecordsPage(QWidget):
                     self.table.setItem(row_index, col_index, item)
 
             if not records:
-                QMessageBox.information(self, "No Records", "No validation records in the past 6 months.")
+                QMessageBox.information(self, "No Records", "No validation records for the selected date range.")
 
             db_gen.close()
 

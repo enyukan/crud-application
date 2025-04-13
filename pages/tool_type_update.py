@@ -30,11 +30,8 @@ class UpdateToolTypePage(QMainWindow):
         self.tool_type_dropdown.addItem("Select Tool Type")  # Placeholder option
         self.populate_tool_type_dropdown()
 
-        select_tool_button = QPushButton("Select Tool Type")
-        select_tool_button.clicked.connect(self.load_tool_data)  # Connect button to load data
-        
+        self.tool_type_dropdown.currentIndexChanged.connect(self.load_tool_data)
         tool_selection_layout.addWidget(self.tool_type_dropdown)
-        tool_selection_layout.addWidget(select_tool_button)
 
         layout.addLayout(tool_selection_layout)
 
@@ -92,17 +89,22 @@ class UpdateToolTypePage(QMainWindow):
         center_layout.addLayout(self.middle_layout)
         center_layout.addLayout(self.right_layout)
 
-        # Bottom section: Submit Button
+        # Bottom section: Delete and Submit Button in the same row
+        button_row_layout = QHBoxLayout()
+
+        self.delete_button = QPushButton("Delete Tool Type")
+        self.delete_button.clicked.connect(self.delete_tool_type)
+        self.delete_button.setStyleSheet("color: red; font-weight: bold;")
+
         self.submit_button = QPushButton("Submit Change")
         self.submit_button.clicked.connect(self.submit_change)
 
-        # Delete Button
-        self.delete_button = QPushButton("Delete Tool Type")
-        self.delete_button.clicked.connect(self.delete_tool_type)
+        button_row_layout.addWidget(self.delete_button)
+        button_row_layout.addWidget(self.submit_button)
 
         layout.addLayout(center_layout)
-        layout.addWidget(self.submit_button)
-        layout.addWidget(self.delete_button)  # Add delete button below submit
+        layout.addLayout(button_row_layout)
+
 
         # Back to dashboard
         self.button_layout = QHBoxLayout()
