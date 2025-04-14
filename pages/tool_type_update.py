@@ -136,7 +136,6 @@ class UpdateToolTypePage(QMainWindow):
             self.tool_type_dropdown.addItem(tool_type.tool_name)
 
     def load_tool_data(self):
-        # When a tool type is selected and the "Select Tool" button is clicked, display its data
         tool_name = self.tool_type_dropdown.currentText()
         if tool_name == "Select Tool Type" or not tool_name:
             return
@@ -146,18 +145,19 @@ class UpdateToolTypePage(QMainWindow):
 
         if tool:
             # Populate the middle section with data from the database
-            self.block1_data_label.setText(str(tool.block_1))
-            self.block2_data_label.setText(str(tool.block_2))
-            self.block3_data_label.setText(str(tool.block_3))
-            self.tolerance_data_label.setText(str(tool.tolerance))
-
-            # Populate the right section with input fields for modification
-            self.block1_input.setText(str(tool.block_1))
+            self.block1_data_label.setText(str(tool.block_1) if tool.block_1 is not None else "-")
             self.block2_data_label.setText(str(tool.block_2) if tool.block_2 is not None else "-")
             self.block3_data_label.setText(str(tool.block_3) if tool.block_3 is not None else "-")
-            self.tolerance_input.setText(str(tool.tolerance))
+            self.tolerance_data_label.setText(str(tool.tolerance) if tool.tolerance is not None else "-")
+
+            # Populate the right section with input fields for modification
+            self.block1_input.setText(str(tool.block_1) if tool.block_1 is not None else "")
+            self.block2_input.setText(str(tool.block_2) if tool.block_2 is not None else "")
+            self.block3_input.setText(str(tool.block_3) if tool.block_3 is not None else "")
+            self.tolerance_input.setText(str(tool.tolerance) if tool.tolerance is not None else "")
         else:
             QMessageBox.warning(self, "Error", "Tool type not found.")
+
 
     def submit_change(self):
         tool_name = self.tool_type_dropdown.currentText()
